@@ -1,0 +1,4 @@
+interface:
+  display_name: "Semifluid API"
+  short_description: "Call Semifluid API without MCP"
+  default_prompt: "Use $semifluid-api to inspect my Semifluid workspace and make API requests safely."
