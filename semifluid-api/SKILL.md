@@ -34,19 +34,53 @@ python3 scripts/semifluid_api.py post /tables/{tableId}/rows/query --json '{"lim
 
 Use `--json @file.json` for request bodies that are too large or sensitive for the command line.
 
+## Fast Path
+
+For common operations shown in Quick Start or `references/api-reference.md`, call `scripts/semifluid_api.py` directly. Do not read `references/api-reference.md`, fetch the live spec, or run `operations` unless the endpoint/body shape is unclear, the request fails with a schema error, or the user asks for an uncommon endpoint.
+
+Expected efficient paths:
+
+- Health check: one `health` command.
+- List tables: one `get /tables` command.
+- Show rows from a known table: one `get /tables/{tableId}/rows --query limit=N --query properties='*'` command.
+- Find a table by name, then read rows: `get /tables`, then one rows command.
+- Simple row/property/table write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
+
 ## Workflow
 
-1. For endpoint shape, read `references/api-reference.md` first.
-2. For exact current schemas, run `python3 scripts/semifluid_api.py spec` or inspect the live spec URL.
-3. Prefer read-only requests first (`GET /tables`, `GET /tables/{tableId}`, `GET /tables/{tableId}/rows`) before mutating data.
-4. For write operations, build a small JSON file and call with `--json @file.json`.
-5. Report status codes and concise results. Do not include secrets in outputs.
+1. Use the Fast Path first for common requests.
+2. For unfamiliar endpoint shape, read `references/api-reference.md`.
+3. For exact current schemas, run `python3 scripts/semifluid_api.py spec` or inspect the live spec URL only when the local reference is insufficient.
+4. Prefer targeted read-only requests (`GET /tables`, `GET /tables/{tableId}`, `GET /tables/{tableId}/rows`) before mutating data.
+5. For write operations, build a small JSON file and call with `--json @file.json`.
+6. Report status codes and concise results. Do not include secrets in outputs.
+
+## Evaluation
+
+Use trace logging when measuring the skill:
+
+```bash
+SEMIFLUID_API_TRACE=/tmp/semifluid-api-trace.jsonl python3 scripts/semifluid_api.py get /tables
+python3 scripts/evaluate_skill_run.py --task list_tables --trace /tmp/semifluid-api-trace.jsonl --success yes --elapsed-seconds 12 --commands 1
+```
+
+Score agent runs on correctness first, then efficiency:
+
+- `success`: did the requested Semifluid action happen correctly?
+- `time_to_first_api_call`: how quickly the agent used the helper.
+- `total_elapsed_time`: end-to-end run time.
+- `shell_command_count`: local commands/tool calls needed.
+- `api_request_count`: Semifluid requests made by the helper.
+- `doc_reads` and `spec_fetches`: extra reference/spec steps before acting.
+- `mutation_safety`: enough targeted read context before writes.
+- `final_answer_noise`: concise status without secrets or excessive internals.
 
 ## Script Notes
 
 - The helper uses only Python standard library.
 - Authenticated requests send `x-api-key: <key>` by default.
 - Every API request reports elapsed time to stderr, leaving response bodies on stdout.
+- Set `SEMIFLUID_API_TRACE=/path/to/trace.jsonl` or pass `--trace-output /path/to/trace.jsonl` to append machine-readable request timing events. Trace events never include API keys, request bodies, response bodies, or query values.
 - Use `--no-auth` only for public endpoints such as `/health`.
 - Use `--base-url` if targeting a non-production Semifluid API.
 - Use `--output path` for large responses or files.

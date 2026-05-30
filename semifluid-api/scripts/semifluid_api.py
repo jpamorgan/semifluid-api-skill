@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import json
 import os
 import subprocess
@@ -19,6 +20,7 @@ from typing import Any
 DEFAULT_BASE_URL = "https://api.semifluid.ai"
 KEYCHAIN_ACCOUNT = "semifluid-api"
 KEYCHAIN_SERVICE = "ai.semifluid.api-key"
+TRACE_ENV = "SEMIFLUID_API_TRACE"
 
 
 class ApiError(Exception):
@@ -98,6 +100,44 @@ def emit_timing(method: str, path: str, status: int | None, elapsed_seconds: flo
     )
 
 
+def write_trace_event(
+    trace_output: str | None,
+    *,
+    method: str,
+    path: str,
+    base_url: str,
+    query: list[tuple[str, str]],
+    body: bytes | None,
+    no_auth: bool,
+    status: int | None,
+    elapsed_seconds: float,
+    error: str | None,
+) -> None:
+    output = trace_output or os.environ.get(TRACE_ENV)
+    if not output:
+        return
+
+    event = {
+        "ts": dt.datetime.now(dt.UTC).isoformat(),
+        "method": method.upper(),
+        "path": path,
+        "base_url": base_url.rstrip("/"),
+        "query_keys": [key for key, _value in query],
+        "body_bytes": len(body) if body is not None else 0,
+        "no_auth": no_auth,
+        "status": status,
+        "elapsed_ms": round(elapsed_seconds * 1000, 1),
+        "ok": status is not None and 200 <= status < 400,
+    }
+    if error:
+        event["error"] = error
+
+    trace_path = Path(output)
+    trace_path.parent.mkdir(parents=True, exist_ok=True)
+    with trace_path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n")
+
+
 def request(
     method: str,
     path: str,
@@ -107,6 +147,7 @@ def request(
     body: bytes | None,
     no_auth: bool,
     auth_header: str,
+    trace_output: str | None,
 ) -> tuple[int, bytes, Any]:
     headers = {"Accept": "application/json", "User-Agent": "curl/8.7.1"}
     if body is not None:
@@ -128,15 +169,33 @@ def request(
     )
     start = time.perf_counter()
     status: int | None = None
+    error_label: str | None = None
     try:
         with urllib.request.urlopen(req) as response:
             status = response.status
             return response.status, response.read(), response.headers
     except urllib.error.HTTPError as error:
         status = error.code
+        error_label = "HTTPError"
         raise ApiError(error.code, error.read(), error.headers) from error
+    except Exception:
+        error_label = "RequestError"
+        raise
     finally:
-        emit_timing(method, path, status, time.perf_counter() - start)
+        elapsed_seconds = time.perf_counter() - start
+        emit_timing(method, path, status, elapsed_seconds)
+        write_trace_event(
+            trace_output,
+            method=method,
+            path=path,
+            base_url=base_url,
+            query=query,
+            body=body,
+            no_auth=no_auth,
+            status=status,
+            elapsed_seconds=elapsed_seconds,
+            error=error_label,
+        )
 
 
 def emit_response(status: int, body: bytes, output: str | None) -> None:
@@ -172,6 +231,7 @@ def run_request(args: argparse.Namespace) -> int:
             body=body,
             no_auth=args.no_auth,
             auth_header=args.auth_header,
+            trace_output=args.trace_output,
         )
         emit_response(status, response_body, args.output)
         return 0
@@ -215,6 +275,7 @@ def run_operations(args: argparse.Namespace) -> int:
             body=None,
             no_auth=True,
             auth_header=args.auth_header,
+            trace_output=args.trace_output,
         )
     except ApiError as error:
         print(f"HTTP {error.status}", file=sys.stderr)
@@ -242,6 +303,7 @@ def add_request_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--output", help="Write raw response body to this path")
     parser.add_argument("--no-auth", action="store_true")
     parser.add_argument("--auth-header", choices=["x-api-key", "bearer"], default="x-api-key")
+    parser.add_argument("--trace-output", help=f"Append trace JSONL events. Also configurable with {TRACE_ENV}.")
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -259,6 +321,7 @@ def build_parser() -> argparse.ArgumentParser:
     operations = subparsers.add_parser("operations", help="List operations from the live spec")
     operations.add_argument("--base-url", default=DEFAULT_BASE_URL)
     operations.add_argument("--auth-header", choices=["x-api-key", "bearer"], default="x-api-key")
+    operations.add_argument("--trace-output", help=f"Append trace JSONL events. Also configurable with {TRACE_ENV}.")
     operations.set_defaults(func=run_operations)
 
     request_parser = subparsers.add_parser("request", help="Call any API path")

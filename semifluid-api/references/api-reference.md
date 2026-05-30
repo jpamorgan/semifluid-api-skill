@@ -4,7 +4,7 @@ Source: `https://api.semifluid.ai/api-reference/spec.json`
 
 OpenAPI: `3.1.1`
 
-API version: `0.1.74`
+API version: `0.1.81`
 
 Base URL: `https://api.semifluid.ai`
 
@@ -63,7 +63,7 @@ python3 scripts/semifluid_api.py patch /tables/{tableId}/rows --json @rows-updat
 - `tableId`, `rowId`, and `propertyId` path parameters are UUID strings.
 - `apiKeyId` is a non-empty string.
 - List endpoints generally default `limit` to `50` and cap `limit` at `100`.
-- `GET /tables/{tableId}/rows`, `GET /tables/{tableId}/rows/{rowId}`, `POST /tables/{tableId}/rows/query`, and `POST /tables/{tableId}/rows/missing` support `properties: "*"` or an array of property keys. With the CLI query string, pass `--query properties='*'`.
+- `GET /tables/{tableId}/rows`, `GET /tables/{tableId}/rows/{rowId}`, `POST /tables/{tableId}/rows`, `PATCH /tables/{tableId}/rows`, `POST /tables/{tableId}/rows/query`, and `POST /tables/{tableId}/rows/missing` support `properties: "*"` or an array of up to 100 property keys. For GET query strings, pass `--query properties='*'`; for POST/PATCH requests, include `properties` in the JSON body.
 - `GET /changes` supports `limit`, `cursor`, `includePayload`, `direction=asc|desc`, `operation`, `entityType`, and `entityId`.
 
 ## API Keys
@@ -144,7 +144,7 @@ Duplicate modes: `structure`, `data`.
 
 ## Rows
 
-Create or upsert rows. Row write batches allow 1 to 500 rows. Property keys must match `^[A-Za-z_][A-Za-z0-9_]*$`.
+Create, update, delete, or upsert rows. Row write batches allow 1 to 1000 rows. Property keys must match `^[A-Za-z_][A-Za-z0-9_]*$`.
 
 ```json
 {
@@ -156,6 +156,8 @@ Create or upsert rows. Row write batches allow 1 to 500 rows. Property keys must
       }
     }
   ],
+  "properties": "*",
+  "returning": "rows",
   "mode": "partial"
 }
 ```
@@ -172,6 +174,8 @@ Update rows by `rowId` or `externalId`:
       }
     }
   ],
+  "properties": "*",
+  "returning": "rows",
   "mode": "partial"
 }
 ```
@@ -190,6 +194,8 @@ Delete rows by `rowId` or `externalId`:
 ```
 
 Batch write modes: `partial` attempts each row independently and returns per-item results. `all_or_nothing` applies the whole batch transactionally.
+
+Create and update row calls default to `returning: "ids"` and `properties: []`. Use `returning: "rows"` plus `properties: "*"` or a property-key array when the response should include row values.
 
 Attachment property values use the attachment metadata returned by `POST /tables/{tableId}/attachments`:
 
@@ -227,6 +233,8 @@ Attachment property values use the attachment metadata returned by `POST /tables
 ```
 
 Filter operators: `eq`, `neq`, `is_empty`, `is_not_empty`, `gt`, `gte`, `lt`, `lte`, `contains`, `starts_with`, `in`.
+
+Query limits: `limit` is 1-100, `q` is at most 256 characters, filters are capped at 25, sort entries are capped at 10, and explicit `properties` arrays are capped at 100 property keys.
 
 `q` searches searchable text-like row values, including text, markdown, email, phone, URL, select labels, multi-select labels, and attachment file names.
 
