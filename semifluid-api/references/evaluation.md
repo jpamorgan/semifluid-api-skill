@@ -60,4 +60,4 @@ Run each prompt 3-5 times against the current skill, then again after instructio
 
 ## What Good Looks Like
 
-Good agents call the helper first for common tasks, avoid reference/spec reads unless needed, and keep final answers short. Writes should use the smallest read-only context needed to avoid changing the wrong table, row, or property.
+Good agents call the helper first for common tasks, avoid reference/spec reads unless needed, and keep final answers short. Writes should use the smallest read-only context needed to avoid changing the wrong table, row, or field.

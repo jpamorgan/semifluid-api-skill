@@ -1,6 +1,6 @@
 ---
 name: semifluid-api
-description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid tables, rows, properties, API keys, attachments, changes, health/version status, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
+description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid tables, rows, fields, API keys, attachments, changes, health/version status, public shares, saved views, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
 ---
 
 # Semifluid API
@@ -28,8 +28,8 @@ Run commands from this skill directory or pass the absolute script path:
 python3 scripts/semifluid_api.py health
 python3 scripts/semifluid_api.py operations
 python3 scripts/semifluid_api.py get /tables
-python3 scripts/semifluid_api.py get /tables/{tableId}/rows --query limit=10 --query properties='*'
-python3 scripts/semifluid_api.py post /tables/{tableId}/rows/query --json '{"limit":10,"q":"search text"}'
+python3 scripts/semifluid_api.py get /tables/{tableId}/rows --query limit=10 --query fields='*'
+python3 scripts/semifluid_api.py post /tables/{tableId}/row-queries --json '{"limit":10,"search":"search text","fields":"*"}'
 ```
 
 Use `--json @file.json` for request bodies that are too large or sensitive for the command line.
@@ -42,9 +42,9 @@ Expected efficient paths:
 
 - Health check: one `health` command.
 - List tables: one `get /tables` command.
-- Show rows from a known table: one `get /tables/{tableId}/rows --query limit=N --query properties='*'` command.
+- Show rows from a known table: one `get /tables/{tableId}/rows --query limit=N --query fields='*'` command.
 - Find a table by name, then read rows: `get /tables`, then one rows command.
-- Simple row/property/table write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
+- Simple row/field/table write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
 
 ## Workflow
 
