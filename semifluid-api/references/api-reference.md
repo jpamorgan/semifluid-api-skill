@@ -2,11 +2,17 @@
 
 Source: `https://api.semifluid.ai/api-reference/spec.json`
 
+Last refreshed from source: `2026-06-13`
+
 OpenAPI: `3.1.1`
 
-API version: `0.1.92`
+API version: `0.1.100`
 
 Base URL: `https://api.semifluid.ai`
+
+JSON spec: `https://api.semifluid.ai/api-reference/spec.json`
+
+YAML spec: `https://api.semifluid.ai/api-reference/spec.yaml`
 
 Auth: send the API key as `x-api-key: <key>`. The helper also supports `Authorization: Bearer <key>` with `--auth-header bearer`, but prefer `x-api-key`.
 
@@ -24,10 +30,14 @@ python3 scripts/semifluid_api.py operations
 python3 scripts/semifluid_api.py get /tables
 python3 scripts/semifluid_api.py get /tables/{tableId}
 python3 scripts/semifluid_api.py get /tables/{tableId}/rows --query limit=50 --query fields='*'
+python3 scripts/semifluid_api.py get /tables/{tableId}/rows/{rowId}/activity --query limit=20
+python3 scripts/semifluid_api.py post /tables/{tableId}/attachments --json @attachment.json
 python3 scripts/semifluid_api.py post /tables/{tableId}/row-queries --json @query.json
 python3 scripts/semifluid_api.py post /tables/{tableId}/row-aggregations --json @aggregate.json
 python3 scripts/semifluid_api.py patch /tables/{tableId}/rows --json @rows-update.json
 python3 scripts/semifluid_api.py post /changes/list --json '{"limit":10,"direction":"desc"}'
+python3 scripts/semifluid_api.py get /webhooks
+python3 scripts/semifluid_api.py post /webhooks --json @webhook.json
 ```
 
 ## Operations
@@ -41,7 +51,7 @@ python3 scripts/semifluid_api.py post /changes/list --json '{"limit":10,"directi
 | PATCH | `/api-keys/{apiKeyId}` | `RenameApiKey` | Rename workspace API key |
 | POST | `/api-keys/{apiKeyId}/rotations` | `RollApiKey` | Roll workspace API key |
 | POST | `/tables/{tableId}/attachments` | `UploadAttachment` | Upload attachment |
-| POST | `/changes/list` | `changes.list` | List workspace changes |
+| POST | `/changes/list` | `changes.list` |  |
 | POST | `/tables/{tableId}/fields` | `CreateTableField` | Create field |
 | PATCH | `/tables/{tableId}/fields/{fieldId}` | `UpdateTableField` | Update field |
 | DELETE | `/tables/{tableId}/fields/{fieldId}` | `DeleteTableField` | Soft-delete field |
@@ -60,7 +70,8 @@ python3 scripts/semifluid_api.py post /changes/list --json '{"limit":10,"directi
 | POST | `/tables/{tableId}/row-aggregations` | `AggregateTableRows` | Aggregate rows |
 | POST | `/tables/{tableId}/missing-row-values` | `FindMissingTableRows` | Find rows with missing values |
 | GET | `/tables/{tableId}/rows/{rowId}` | `GetTableRow` | Get row |
-| POST | `/tables/{tableId}/row-lookups` | `LookupTableRows` | Look up rows by ID |
+| GET | `/tables/{tableId}/rows/{rowId}/activity` | `GetTableRowActivity` | Get row activity |
+| POST | `/tables/{tableId}/row-lookups` | `LookupTableRows` | Look up rows |
 | POST | `/tables/{tableId}/external-id-rows` | `UpsertTableRows` | Upsert rows by external ID |
 | POST | `/tables` | `CreateTable` | Create table |
 | GET | `/tables` | `ListTables` | List tables |
@@ -79,17 +90,27 @@ python3 scripts/semifluid_api.py post /changes/list --json '{"limit":10,"directi
 | GET | `/tables/{tableId}/public-share` | `GetTablePublicShareState` | Get table public share state |
 | POST | `/tables/{tableId}/public-share` | `EnableTablePublicShare` | Enable or rotate table public share |
 | DELETE | `/tables/{tableId}/public-share` | `DisableTablePublicShare` | Disable table public share |
+| GET | `/webhooks` | `ListWebhooks` | List workspace webhooks |
+| POST | `/webhooks` | `CreateWebhook` | Create webhook |
+| PATCH | `/webhooks/{webhookId}` | `UpdateWebhook` | Update webhook |
+| DELETE | `/webhooks/{webhookId}` | `DeleteWebhook` | Delete webhook |
+| POST | `/webhooks/{webhookId}/tests` | `TestWebhook` | Send test event |
+| GET | `/webhooks/{webhookId}/deliveries` | `ListWebhookDeliveries` | List webhook deliveries |
 
 ## Parameters
 
-- `tableId`, `rowId`, `fieldId`, and `viewId` path parameters are UUID strings.
+- `tableId`, `rowId`, `fieldId`, `viewId`, and `webhookId` path parameters are UUID strings.
 - `apiKeyId` is a non-empty string.
-- `publicShareToken` is a public share token string.
-- List endpoints generally default `limit` to `50` and cap `limit` at `100`.
+- `publicShareToken` is a public share token string from 32 to 256 characters.
+- List endpoints generally default `limit` to `50` and cap `limit` at `100`; webhook deliveries default to `20` and cap at `50`.
 - Row read and row write endpoints support `fields: "*"` or an array of up to 100 field keys. For GET query strings, pass `--query fields='*'`; for POST/PATCH requests, include `fields` in the JSON body.
-- `POST /changes/list` supports `limit`, `cursor`, `includePayload`, `direction=asc|desc`, `tableId`, `operation`, `entityType`, and `entityId`.
+- `POST /tables/{tableId}/attachments` accepts `name`, optional `mimeType`, and `dataBase64` up to 34,952,536 characters.
+- `POST /changes/list` supports `limit`, `cursor`, `includePayload`, `direction=asc|desc`, `tableId`, `operation`, `entityType`, and `entityId`; `direction` defaults to `asc`.
+- `GET /webhooks` accepts optional `tableId`; `GET /webhooks/{webhookId}/deliveries` accepts optional `limit`.
 
 ## API Keys
+
+API key names must be 1 to 64 characters. If `access` is omitted when creating a key, the API creates a workspace-wide key.
 
 Create a workspace-wide key:
 
@@ -152,6 +173,8 @@ Create a table:
 }
 ```
 
+Table names are required. Table descriptions, icons, `isLocked`, and initial `fields` are optional. Initial field lists are capped at 100 fields.
+
 Create a field:
 
 ```json
@@ -163,6 +186,7 @@ Create a field:
   "isRequired": false,
   "isHidden": false,
   "isPrimary": false,
+  "position": 0,
   "options": [
     {
       "label": "Open",
@@ -173,7 +197,7 @@ Create a field:
 }
 ```
 
-Field create requires `name`, `key`, and `type`. Field update accepts `name`, `description`, `config`, `isRequired`, `isHidden`, `isPrimary`, and `options`. Select/status options use `label`, `value`, optional `color`, and optional `id` when updating.
+Field create requires `name`, `key`, and `type`; it also accepts optional `description`, `config`, `isRequired`, `isHidden`, `isPrimary`, `position`, and `options`. Field update accepts `name`, `description`, `config`, `isRequired`, `isHidden`, `isPrimary`, and `options`. Select/status options use `label`, `value`, optional `color`, and optional `id` when updating. Field option arrays are capped at 100 options, and option values are capped at 128 characters.
 
 Field types from the spec: `text`, `markdown`, `select`, `status`, `multi_select`, `attachment`, `phone`, `number`, `currency`, `auto_number`, `boolean`, `date`, `date_time`, `email`, `url`, `relation`, `lookup`, `rollup`.
 
@@ -197,7 +221,7 @@ Duplicate modes: `structure`, `data`.
 
 ## Rows
 
-Create, update, delete, or upsert rows. Row write batches allow 1 to 1000 rows. Field keys must match `^[A-Za-z_][A-Za-z0-9_]*$`.
+Create, update, delete, or upsert rows. Row write batches require 1 to 1000 rows. External IDs must be 1 to 191 characters. Field keys in row values must match `^[A-Za-z_][A-Za-z0-9_]*$`.
 
 Create rows:
 
@@ -250,15 +274,32 @@ Delete rows by `rowId` or `externalId`:
 
 Batch write modes: `partial` attempts each row independently and returns per-item results. `all_or_nothing` applies the whole batch transactionally.
 
-Create and update row calls default to `returning: "ids"` and `fields: []`. Use `returning: "rows"` plus `fields: "*"` or a field-key array when the response should include row values.
+Create and update row calls default to `returning: "ids"` and `fields: []`. Use `returning: "rows"` plus `fields: "*"` or a field-key array when the response should include row values. Upsert-by-external-ID calls return by external ID and do not accept `fields` or `returning`.
 
-Attachment field values use the attachment metadata returned by `POST /tables/{tableId}/attachments`:
+Upload an attachment before storing it in an attachment field:
 
 ```json
 {
   "name": "file.pdf",
   "mimeType": "application/pdf",
   "dataBase64": "<base64 file contents>"
+}
+```
+
+Attachment field values use arrays of attachment metadata returned by `POST /tables/{tableId}/attachments`:
+
+```json
+{
+  "attachment_field": [
+    {
+      "id": "00000000-0000-0000-0000-000000000000",
+      "name": "file.pdf",
+      "mimeType": "application/pdf",
+      "size": 12345,
+      "url": "https://api.semifluid.ai/...",
+      "createdAt": "2026-06-13T00:00:00.000Z"
+    }
+  ]
 }
 ```
 
@@ -286,6 +327,26 @@ Upsert rows by external ID with `POST /tables/{tableId}/external-id-rows`:
   "mutationMode": "partial"
 }
 ```
+
+## Row Activity
+
+Read row-level activity with `GET /tables/{tableId}/rows/{rowId}/activity`. It returns paginated changes for that row.
+
+```bash
+python3 scripts/semifluid_api.py get /tables/{tableId}/rows/{rowId}/activity --query limit=20
+```
+
+Query parameters:
+
+- `limit`: 1 to 100, default 50.
+- `cursor`: pass the previous response `pageInfo.nextCursor` for the next page.
+
+Each activity item includes:
+
+- `kind`: `created`, `updated`, or `deleted`.
+- `occurredAt` and `requestId`.
+- `actor`: `{ "type": "user" | "api_key", "name": string | null }`.
+- `changes`: field-level `fieldKey`, `before`, and `after` values.
 
 ## Query Rows
 
@@ -356,6 +417,8 @@ Query limits: `limit` is 1-100, `search` is at most 256 characters, filters are 
 
 Aggregate metric operations: `count`, `count_values`, `count_empty`, `count_unique`, `count_true`, `count_false`, `count_items`, `count_unique_items`, `sum`, `avg`, `min`, `max`.
 
+Aggregate requests default to one metric: `{ "key": "count", "operation": "count" }`. Requests accept 1 to 10 metrics. Metric keys must be 1 to 128 characters and match `^[A-Za-z0-9][A-Za-z0-9_.:-]*$`. `limit` applies to grouped aggregate results only; ungrouped aggregate queries always return one row.
+
 `countLimit` can cap count-like ungrouped metrics from 1 to 1,000,000. Responses return `countLimit + 1` when more rows or values exist.
 
 Date buckets: `day`, `week`, `month`, `year`. Week buckets start on Monday and date buckets use UTC.
@@ -375,7 +438,7 @@ Use `fields: "*"` to inspect all fields. Missing match modes: `any`, `all`.
 
 ## Table View
 
-`PATCH /tables/{tableId}/view` updates table view preferences. `PATCH /tables/{tableId}` can also update table metadata, including `metadata.tableView`.
+`PATCH /tables/{tableId}/view` updates table view preferences. `PATCH /tables/{tableId}` can also update table metadata, including `metadata.tableView`. In `PATCH /tables/{tableId}/view` and saved view updates, table-view preference properties can be set to `null` to clear them.
 
 ```json
 {
@@ -409,6 +472,8 @@ Use `fields: "*"` to inspect all fields. Missing match modes: `any`, `all`.
 
 Field calculations: `count_all`, `count_values`, `count_unique`, `count_empty`, `count_not_empty`, `count_true`, `count_false`, `percent_true`, `percent_false`, `count_items`, `count_unique_items`, `percent_empty`, `percent_not_empty`, `sum`, `average`, `min`, `max`, `earliest`, `latest`.
 
+Table-view filters are capped at 25, sort entries at 10, field order and hidden field IDs at 100, and field widths at 96 to 1600 pixels.
+
 ## Saved Views
 
 Create a saved view:
@@ -421,7 +486,7 @@ Create a saved view:
 }
 ```
 
-View types: `table`, `grid`, `board`, `map`, `calendar`, `list`, `form`, `dashboard`.
+Saved view create defaults to `name: "Table"` and `type: "table"` when omitted. Saved view names must be 1 to 120 characters. View types: `table`, `grid`, `board`, `map`, `calendar`, `list`, `form`, `dashboard`.
 
 Reorder saved views:
 
@@ -430,6 +495,8 @@ Reorder saved views:
   "viewIds": ["00000000-0000-0000-0000-000000000000"]
 }
 ```
+
+Saved view reorder accepts 1 to 25 view IDs.
 
 Update a saved view:
 
@@ -478,6 +545,66 @@ Public share read endpoints use a `publicShareToken` and do not require the work
 - `POST /public-shares/{publicShareToken}/row-aggregations`
 
 Public share row query and aggregation request bodies match the authenticated table row query and aggregation bodies.
+
+## Webhooks
+
+Webhook endpoints use workspace API key auth. Treat webhook secrets and delivery payloads as sensitive; do not include them in final answers, logs, or files unless the user explicitly asks and the destination is appropriate. `POST /webhooks` returns the webhook `secret` only in the create response.
+
+List all webhooks, or filter by table:
+
+```bash
+python3 scripts/semifluid_api.py get /webhooks
+python3 scripts/semifluid_api.py get /webhooks --query tableId=00000000-0000-0000-0000-000000000000
+```
+
+Create a webhook:
+
+```json
+{
+  "name": "Sync listener",
+  "url": "https://example.com/semifluid/webhook",
+  "tableId": "00000000-0000-0000-0000-000000000000",
+  "events": ["row.created", "row.updated"]
+}
+```
+
+Create requires `name` and `url`. `name` is 1 to 64 characters, `url` is 1 to 2048 characters, `tableId` is optional, and `events` is optional but must contain 1 to 9 event types when supplied.
+
+Webhook event types:
+
+- `row.created`, `row.updated`, `row.deleted`
+- `field.created`, `field.updated`, `field.deleted`
+- `table.created`, `table.updated`, `table.deleted`
+
+Update a webhook:
+
+```json
+{
+  "name": "Sync listener",
+  "url": "https://example.com/semifluid/webhook",
+  "tableId": null,
+  "events": ["row.created"],
+  "isActive": true
+}
+```
+
+Update accepts any subset of `name`, `url`, `tableId`, `events`, and `isActive`. Set `tableId` to `null` to make the webhook workspace-wide.
+
+Delete a webhook with `DELETE /webhooks/{webhookId}`.
+
+Send a test event:
+
+```bash
+python3 scripts/semifluid_api.py post /webhooks/{webhookId}/tests
+```
+
+List recent deliveries:
+
+```bash
+python3 scripts/semifluid_api.py get /webhooks/{webhookId}/deliveries --query limit=20
+```
+
+Webhook delivery results include `eventType`, `status` (`success` or `failed`), `attempts`, `responseStatus`, `errorMessage`, `durationMs`, `payload`, and `createdAt`.
 
 ## Changes
 

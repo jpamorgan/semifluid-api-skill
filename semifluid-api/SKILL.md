@@ -1,6 +1,6 @@
 ---
 name: semifluid-api
-description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid tables, rows, fields, API keys, attachments, changes, health/version status, public shares, saved views, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
+description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid tables, rows, fields, API keys, attachments, changes, health/version status, public shares, saved views, webhooks, row activity, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
 ---
 
 # Semifluid API
@@ -30,6 +30,9 @@ python3 scripts/semifluid_api.py operations
 python3 scripts/semifluid_api.py get /tables
 python3 scripts/semifluid_api.py get /tables/{tableId}/rows --query limit=10 --query fields='*'
 python3 scripts/semifluid_api.py post /tables/{tableId}/row-queries --json '{"limit":10,"search":"search text","fields":"*"}'
+python3 scripts/semifluid_api.py post /tables/{tableId}/attachments --json @attachment.json
+python3 scripts/semifluid_api.py get /tables/{tableId}/rows/{rowId}/activity --query limit=10
+python3 scripts/semifluid_api.py get /webhooks
 ```
 
 Use `--json @file.json` for request bodies that are too large or sensitive for the command line.
@@ -44,6 +47,9 @@ Expected efficient paths:
 - List tables: one `get /tables` command.
 - Show rows from a known table: one `get /tables/{tableId}/rows --query limit=N --query fields='*'` command.
 - Find a table by name, then read rows: `get /tables`, then one rows command.
+- Inspect row activity: one `get /tables/{tableId}/rows/{rowId}/activity --query limit=N` command.
+- Upload an attachment: one `post /tables/{tableId}/attachments --json @attachment.json` command after building a request body with `name`, optional `mimeType`, and `dataBase64`.
+- List webhooks: one `get /webhooks` command; add `--query tableId=...` for a table-scoped list.
 - Simple row/field/table write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
 
 ## Workflow

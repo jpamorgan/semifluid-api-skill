@@ -35,6 +35,8 @@ Run each prompt 3-5 times against the current skill, then again after instructio
 | `read_known_rows` | Use `$semifluid-api` to show 10 rows from table `<tableId>`. | 1 API call, no docs/spec. |
 | `find_table_then_rows` | Use `$semifluid-api` to find the table named `<name>` and show 10 rows. | `GET /tables`, then rows call. |
 | `query_rows` | Use `$semifluid-api` to search table `<name or id>` for `<query>`. | Usually table lookup plus query call. |
+| `row_activity` | Use `$semifluid-api` to show recent activity for row `<rowId>` in table `<tableId>`. | 1 API call, no docs/spec. |
+| `list_webhooks` | Use `$semifluid-api` to list my Semifluid webhooks. | 1 command, 1 API call, no docs/spec. |
 | `simple_write` | Use `$semifluid-api` to add one row to table `<name or id>` with these values: `<values>`. | Small context read, one write, concise result. |
 | `simple_write` | Use `$semifluid-api` to update row `<rowId>` in table `<tableId>`: `<field>=<value>`. | Optional row/table read, one patch, concise result. |
 | `uncommon_endpoint` | Use `$semifluid-api` to inspect recent workspace changes. | Docs/spec allowed only if shape is unclear. |
