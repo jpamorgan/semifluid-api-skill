@@ -2,11 +2,11 @@
 
 Source: `https://api.semifluid.ai/api-reference/spec.json`
 
-Last refreshed from source: `2026-06-13`
+Last refreshed from source: `2026-06-15`
 
 OpenAPI: `3.1.1`
 
-API version: `0.1.100`
+API version: `0.1.102`
 
 Base URL: `https://api.semifluid.ai`
 
@@ -20,21 +20,25 @@ The helper reports each API request duration to stderr as `Timing: METHOD /path 
 
 ## Current Naming
 
-The current API uses `fields` and `field` in request parameters and bodies. Older docs, examples, or code may use `properties` and `property`; prefer the current `fields` terminology and endpoint paths below.
+The current API uses `collections` and collection-scoped paths. Older docs, examples, or code may use `tables`, `tableId`, or `table-scoped`; prefer `collections`, `collectionId`, and the endpoint paths below.
+
+Record endpoints still use `/rows` in the URL and `rowId` in request/response bodies. Use "records" for user-facing language, but keep `rows`/`rowId` when calling the API.
 
 ## Common Commands
 
 ```bash
 python3 scripts/semifluid_api.py health
 python3 scripts/semifluid_api.py operations
-python3 scripts/semifluid_api.py get /tables
-python3 scripts/semifluid_api.py get /tables/{tableId}
-python3 scripts/semifluid_api.py get /tables/{tableId}/rows --query limit=50 --query fields='*'
-python3 scripts/semifluid_api.py get /tables/{tableId}/rows/{rowId}/activity --query limit=20
-python3 scripts/semifluid_api.py post /tables/{tableId}/attachments --json @attachment.json
-python3 scripts/semifluid_api.py post /tables/{tableId}/row-queries --json @query.json
-python3 scripts/semifluid_api.py post /tables/{tableId}/row-aggregations --json @aggregate.json
-python3 scripts/semifluid_api.py patch /tables/{tableId}/rows --json @rows-update.json
+python3 scripts/semifluid_api.py get /collections
+python3 scripts/semifluid_api.py get /collections/{collectionId}
+python3 scripts/semifluid_api.py get /collections/{collectionId}/rows --query limit=50 --query fields='*'
+python3 scripts/semifluid_api.py post /collections/{collectionId}/row-queries --json @query.json
+python3 scripts/semifluid_api.py post /collections/{collectionId}/row-aggregations --json @aggregate.json
+python3 scripts/semifluid_api.py patch /collections/{collectionId}/rows --json @rows-update.json
+python3 scripts/semifluid_api.py get /collections/{collectionId}/rows/{rowId}/activity --query limit=20
+python3 scripts/semifluid_api.py post /collections/{collectionId}/attachments --json @attachment.json
+python3 scripts/semifluid_api.py get /collections/{collectionId}/intake-forms
+python3 scripts/semifluid_api.py post /collections/{collectionId}/csv-imports --json @csv-import.json
 python3 scripts/semifluid_api.py post /changes/list --json '{"limit":10,"direction":"desc"}'
 python3 scripts/semifluid_api.py get /webhooks
 python3 scripts/semifluid_api.py post /webhooks --json @webhook.json
@@ -50,46 +54,60 @@ python3 scripts/semifluid_api.py post /webhooks --json @webhook.json
 | DELETE | `/api-keys/{apiKeyId}` | `DeleteApiKey` | Delete workspace API key |
 | PATCH | `/api-keys/{apiKeyId}` | `RenameApiKey` | Rename workspace API key |
 | POST | `/api-keys/{apiKeyId}/rotations` | `RollApiKey` | Roll workspace API key |
-| POST | `/tables/{tableId}/attachments` | `UploadAttachment` | Upload attachment |
-| POST | `/changes/list` | `changes.list` |  |
-| POST | `/tables/{tableId}/fields` | `CreateTableField` | Create field |
-| PATCH | `/tables/{tableId}/fields/{fieldId}` | `UpdateTableField` | Update field |
-| DELETE | `/tables/{tableId}/fields/{fieldId}` | `DeleteTableField` | Soft-delete field |
-| PATCH | `/tables/{tableId}/fields/reorder` | `ReorderTableFields` | Reorder fields |
+| POST | `/collections/{collectionId}/attachments` | `UploadAttachment` | Upload attachment |
+| POST | `/changes/list` | `changes.list` | List changes |
+| POST | `/collections/{collectionId}/fields` | `CreateCollectionField` | Create field |
+| PATCH | `/collections/{collectionId}/fields/{fieldId}` | `UpdateCollectionField` | Update field |
+| DELETE | `/collections/{collectionId}/fields/{fieldId}` | `DeleteCollectionField` | Soft-delete field |
+| PATCH | `/collections/{collectionId}/fields/reorder` | `ReorderCollectionFields` | Reorder fields |
+| GET | `/collections/{collectionId}/intake-forms` | `ListIntakeForms` | List intake forms |
+| POST | `/collections/{collectionId}/intake-forms` | `CreateIntakeForm` | Create intake form |
+| GET | `/collections/{collectionId}/intake-forms/{intakeFormId}` | `GetIntakeForm` | Get intake form |
+| PATCH | `/collections/{collectionId}/intake-forms/{intakeFormId}` | `UpdateIntakeForm` | Update intake form |
+| DELETE | `/collections/{collectionId}/intake-forms/{intakeFormId}` | `DeleteIntakeForm` | Delete intake form |
+| GET | `/intake-forms/{intakeFormToken}` | `GetPublicIntakeForm` | Get public intake form |
+| POST | `/intake-forms/{intakeFormToken}/submissions` | `SubmitIntakeForm` | Submit intake form response |
 | GET | `/public-shares/{publicShareToken}/resolve` | `ResolvePublicShare` | Resolve public share |
-| GET | `/public-shares/{publicShareToken}` | `GetPublicShareTable` | Get public share table |
-| GET | `/public-shares/{publicShareToken}/rows` | `ListPublicShareRows` | List public share rows |
-| POST | `/public-shares/{publicShareToken}/row-queries` | `QueryPublicShareRows` | Query public share rows |
-| POST | `/public-shares/{publicShareToken}/row-aggregations` | `AggregatePublicShareRows` | Aggregate public share rows |
-| GET | `/public-shares/{publicShareToken}/rows/{rowId}` | `GetPublicShareRow` | Get public share row |
-| POST | `/tables/{tableId}/rows` | `CreateTableRows` | Create rows |
-| GET | `/tables/{tableId}/rows` | `ListTableRows` | List rows |
-| PATCH | `/tables/{tableId}/rows` | `UpdateTableRows` | Update row values |
-| DELETE | `/tables/{tableId}/rows` | `DeleteTableRows` | Soft-delete rows |
-| POST | `/tables/{tableId}/row-queries` | `QueryTableRows` | Query rows |
-| POST | `/tables/{tableId}/row-aggregations` | `AggregateTableRows` | Aggregate rows |
-| POST | `/tables/{tableId}/missing-row-values` | `FindMissingTableRows` | Find rows with missing values |
-| GET | `/tables/{tableId}/rows/{rowId}` | `GetTableRow` | Get row |
-| GET | `/tables/{tableId}/rows/{rowId}/activity` | `GetTableRowActivity` | Get row activity |
-| POST | `/tables/{tableId}/row-lookups` | `LookupTableRows` | Look up rows |
-| POST | `/tables/{tableId}/external-id-rows` | `UpsertTableRows` | Upsert rows by external ID |
-| POST | `/tables` | `CreateTable` | Create table |
-| GET | `/tables` | `ListTables` | List tables |
-| GET | `/tables/{tableId}` | `GetTableDefinition` | Get table |
-| PATCH | `/tables/{tableId}` | `UpdateTable` | Update table |
-| DELETE | `/tables/{tableId}` | `DeleteTable` | Soft-delete table |
-| POST | `/tables/{tableId}/copies` | `DuplicateTable` | Duplicate table |
-| PATCH | `/tables/{tableId}/view` | `UpdateTableView` | Update table view preferences |
-| GET | `/tables/{tableId}/views` | `ListTableViews` | List table views |
-| POST | `/tables/{tableId}/views` | `CreateTableView` | Create table view |
-| PATCH | `/tables/{tableId}/views` | `ReorderTableViews` | Reorder table views |
-| PATCH | `/tables/{tableId}/views/{viewId}` | `UpdateSavedTableView` | Update table view |
-| DELETE | `/tables/{tableId}/views/{viewId}` | `DeleteTableView` | Delete table view |
-| POST | `/tables/{tableId}/views/{viewId}/copies` | `DuplicateTableView` | Duplicate table view |
-| PATCH | `/tables/{tableId}/views/{viewId}/default` | `SetDefaultTableView` | Set default table view |
-| GET | `/tables/{tableId}/public-share` | `GetTablePublicShareState` | Get table public share state |
-| POST | `/tables/{tableId}/public-share` | `EnableTablePublicShare` | Enable or rotate table public share |
-| DELETE | `/tables/{tableId}/public-share` | `DisableTablePublicShare` | Disable table public share |
+| GET | `/public-shares/{publicShareToken}` | `GetPublicShareCollection` | Get public share collection |
+| GET | `/public-shares/{publicShareToken}/rows` | `ListPublicShareRecords` | List public share records |
+| POST | `/public-shares/{publicShareToken}/row-queries` | `QueryPublicShareRecords` | Query public share records |
+| POST | `/public-shares/{publicShareToken}/row-aggregations` | `AggregatePublicShareRecords` | Aggregate public share records |
+| GET | `/public-shares/{publicShareToken}/rows/{rowId}` | `GetPublicShareRecord` | Get public share record |
+| POST | `/collections/{collectionId}/rows` | `CreateCollectionRecords` | Create records |
+| GET | `/collections/{collectionId}/rows` | `ListCollectionRecords` | List records |
+| PATCH | `/collections/{collectionId}/rows` | `UpdateCollectionRecords` | Update record values |
+| DELETE | `/collections/{collectionId}/rows` | `DeleteCollectionRecords` | Soft-delete records |
+| POST | `/collections/{collectionId}/row-queries` | `QueryCollectionRecords` | Query records |
+| POST | `/collections/{collectionId}/row-aggregations` | `AggregateCollectionRecords` | Aggregate records |
+| POST | `/collections/{collectionId}/missing-row-values` | `FindMissingCollectionRecords` | Find records with missing values |
+| GET | `/collections/{collectionId}/rows/{rowId}` | `GetCollectionRecord` | Get record |
+| GET | `/collections/{collectionId}/rows/{rowId}/activity` | `GetCollectionRecordActivity` | Get record activity |
+| POST | `/collections/{collectionId}/row-lookups` | `LookupCollectionRecords` | Look up records |
+| POST | `/collections/{collectionId}/csv-imports` | `ImportCollectionRecordsCsv` | Import records from CSV |
+| POST | `/collections/{collectionId}/external-id-rows` | `UpsertCollectionRecords` | Upsert records by external ID |
+| PATCH | `/collections/{collectionId}/rows/locks` | `SetCollectionRecordLocks` | Lock or unlock records |
+| POST | `/collections/{collectionId}/suggestions` | `CreateCollectionSuggestion` | Suggest a record change |
+| GET | `/collections/{collectionId}/suggestions` | `ListCollectionSuggestions` | List suggestions |
+| GET | `/collections/{collectionId}/suggestions/{suggestionId}` | `GetCollectionSuggestion` | Get suggestion |
+| POST | `/collections/{collectionId}/suggestions/{suggestionId}/approvals` | `ApproveCollectionSuggestion` | Approve suggestion |
+| POST | `/collections/{collectionId}/suggestions/{suggestionId}/rejections` | `RejectCollectionSuggestion` | Reject suggestion |
+| POST | `/collections` | `CreateCollection` | Create collection |
+| GET | `/collections` | `ListCollections` | List collections |
+| GET | `/collections/{collectionId}` | `GetCollectionDefinition` | Get collection |
+| PATCH | `/collections/{collectionId}` | `UpdateCollection` | Update collection |
+| DELETE | `/collections/{collectionId}` | `DeleteCollection` | Soft-delete collection |
+| POST | `/collections/{collectionId}/copies` | `DuplicateCollection` | Duplicate collection |
+| PATCH | `/collections/{collectionId}/view` | `UpdateCollectionView` | Update collection view preferences |
+| GET | `/collections/{collectionId}/views` | `ListCollectionViews` | List collection views |
+| POST | `/collections/{collectionId}/views` | `CreateCollectionView` | Create collection view |
+| PATCH | `/collections/{collectionId}/views` | `ReorderCollectionViews` | Reorder collection views |
+| PATCH | `/collections/{collectionId}/views/{viewId}` | `UpdateSavedCollectionView` | Update collection view |
+| DELETE | `/collections/{collectionId}/views/{viewId}` | `DeleteCollectionView` | Delete collection view |
+| POST | `/collections/{collectionId}/views/{viewId}/copies` | `DuplicateCollectionView` | Duplicate collection view |
+| PATCH | `/collections/{collectionId}/views/{viewId}/default` | `SetDefaultCollectionView` | Set default collection view |
+| GET | `/collections/{collectionId}/public-share` | `GetCollectionPublicShareState` | Get collection public share state |
+| POST | `/collections/{collectionId}/public-share` | `EnableCollectionPublicShare` | Enable or rotate collection public share |
+| DELETE | `/collections/{collectionId}/public-share` | `DisableCollectionPublicShare` | Disable collection public share |
 | GET | `/webhooks` | `ListWebhooks` | List workspace webhooks |
 | POST | `/webhooks` | `CreateWebhook` | Create webhook |
 | PATCH | `/webhooks/{webhookId}` | `UpdateWebhook` | Update webhook |
@@ -99,14 +117,15 @@ python3 scripts/semifluid_api.py post /webhooks --json @webhook.json
 
 ## Parameters
 
-- `tableId`, `rowId`, `fieldId`, `viewId`, and `webhookId` path parameters are UUID strings.
+- `collectionId`, `rowId`, `fieldId`, `viewId`, `intakeFormId`, `suggestionId`, and `webhookId` path parameters are UUID strings.
 - `apiKeyId` is a non-empty string.
-- `publicShareToken` is a public share token string from 32 to 256 characters.
+- `publicShareToken` and `intakeFormToken` are public token strings from 32 to 256 characters.
 - List endpoints generally default `limit` to `50` and cap `limit` at `100`; webhook deliveries default to `20` and cap at `50`.
-- Row read and row write endpoints support `fields: "*"` or an array of up to 100 field keys. For GET query strings, pass `--query fields='*'`; for POST/PATCH requests, include `fields` in the JSON body.
-- `POST /tables/{tableId}/attachments` accepts `name`, optional `mimeType`, and `dataBase64` up to 34,952,536 characters.
-- `POST /changes/list` supports `limit`, `cursor`, `includePayload`, `direction=asc|desc`, `tableId`, `operation`, `entityType`, and `entityId`; `direction` defaults to `asc`.
-- `GET /webhooks` accepts optional `tableId`; `GET /webhooks/{webhookId}/deliveries` accepts optional `limit`.
+- Record read and write endpoints support `fields: "*"` or an array of up to 100 field keys. For GET query strings, pass `--query fields='*'`; for POST/PATCH requests, include `fields` in the JSON body.
+- Field keys in record values must match `^[A-Za-z_][A-Za-z0-9_]*$`.
+- `POST /collections/{collectionId}/attachments` accepts `name`, optional `mimeType`, and `dataBase64` up to 34,952,536 characters.
+- `POST /changes/list` supports `limit`, `cursor`, `includePayload`, `direction=asc|desc`, `collectionId`, `operation`, `entityType`, and `entityId`; `direction` defaults to `asc`.
+- `GET /webhooks` accepts optional `collectionId`; `GET /webhooks/{webhookId}/deliveries` accepts optional `limit`.
 
 ## API Keys
 
@@ -123,16 +142,16 @@ Create a workspace-wide key:
 }
 ```
 
-Create a table-scoped key:
+Create a collection-scoped key:
 
 ```json
 {
-  "name": "Readonly table key",
+  "name": "Readonly collection key",
   "access": {
-    "kind": "table_scoped",
+    "kind": "collection_scoped",
     "grants": [
       {
-        "tableId": "00000000-0000-0000-0000-000000000000",
+        "collectionId": "00000000-0000-0000-0000-000000000000",
         "scope": "read_only"
       }
     ]
@@ -140,13 +159,13 @@ Create a table-scoped key:
 }
 ```
 
-Table-scoped grant scopes: `read_only`, `row_editor`, `table_admin`.
+Collection-scoped grant scopes: `read_only`, `row_suggester`, `suggestion_reviewer`, `row_editor`, `locked_row_editor`, `collection_admin`.
 
 Roll an API key with `POST /api-keys/{apiKeyId}/rotations`.
 
-## Tables And Fields
+## Collections And Fields
 
-Create a table:
+Create a collection:
 
 ```json
 {
@@ -173,7 +192,21 @@ Create a table:
 }
 ```
 
-Table names are required. Table descriptions, icons, `isLocked`, and initial `fields` are optional. Initial field lists are capped at 100 fields.
+Collection names are required. Collection descriptions, icons, `isLocked`, and initial `fields` are optional. Initial field lists are capped at 100 fields.
+
+Update a collection:
+
+```json
+{
+  "name": "Tasks",
+  "description": "Tracked tasks",
+  "isLocked": false,
+  "projectName": "Operations",
+  "visibility": "primary"
+}
+```
+
+`PATCH /collections/{collectionId}` accepts any subset of `name`, `icon`, `description`, `isLocked`, `projectName`, `visibility`, and `metadata`.
 
 Create a field:
 
@@ -209,7 +242,7 @@ Reorder fields:
 }
 ```
 
-Duplicate a table:
+Duplicate a collection:
 
 ```json
 {
@@ -219,11 +252,11 @@ Duplicate a table:
 
 Duplicate modes: `structure`, `data`.
 
-## Rows
+## Records
 
-Create, update, delete, or upsert rows. Row write batches require 1 to 1000 rows. External IDs must be 1 to 191 characters. Field keys in row values must match `^[A-Za-z_][A-Za-z0-9_]*$`.
+Create, update, delete, lock, or upsert records. Record write batches require 1 to 1000 rows. External IDs must be 1 to 191 characters.
 
-Create rows:
+Create records:
 
 ```json
 {
@@ -241,7 +274,7 @@ Create rows:
 }
 ```
 
-Update rows by `rowId` or `externalId`:
+Update records by `rowId` or `externalId`:
 
 ```json
 {
@@ -259,7 +292,7 @@ Update rows by `rowId` or `externalId`:
 }
 ```
 
-Delete rows by `rowId` or `externalId`:
+Delete records by `rowId` or `externalId`:
 
 ```json
 {
@@ -272,9 +305,23 @@ Delete rows by `rowId` or `externalId`:
 }
 ```
 
-Batch write modes: `partial` attempts each row independently and returns per-item results. `all_or_nothing` applies the whole batch transactionally.
+Lock or unlock records:
 
-Create and update row calls default to `returning: "ids"` and `fields: []`. Use `returning: "rows"` plus `fields: "*"` or a field-key array when the response should include row values. Upsert-by-external-ID calls return by external ID and do not accept `fields` or `returning`.
+```json
+{
+  "rows": [
+    {
+      "rowId": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "isLocked": true,
+  "mutationMode": "partial"
+}
+```
+
+Batch write modes: `partial` attempts each record independently and returns per-item results. `all_or_nothing` applies the whole batch transactionally.
+
+Create and update record calls default to `returning: "ids"` and `fields: []`. Use `returning: "rows"` plus `fields: "*"` or a field-key array when the response should include record values. Upsert-by-external-ID calls do not accept `fields` or `returning`.
 
 Upload an attachment before storing it in an attachment field:
 
@@ -286,7 +333,7 @@ Upload an attachment before storing it in an attachment field:
 }
 ```
 
-Attachment field values use arrays of attachment metadata returned by `POST /tables/{tableId}/attachments`:
+Attachment field values use arrays of attachment metadata returned by `POST /collections/{collectionId}/attachments`:
 
 ```json
 {
@@ -297,13 +344,13 @@ Attachment field values use arrays of attachment metadata returned by `POST /tab
       "mimeType": "application/pdf",
       "size": 12345,
       "url": "https://api.semifluid.ai/...",
-      "createdAt": "2026-06-13T00:00:00.000Z"
+      "createdAt": "2026-06-15T00:00:00.000Z"
     }
   ]
 }
 ```
 
-Look up rows by ID:
+Look up records by ID:
 
 ```json
 {
@@ -312,7 +359,7 @@ Look up rows by ID:
 }
 ```
 
-Upsert rows by external ID with `POST /tables/{tableId}/external-id-rows`:
+Upsert records by external ID with `POST /collections/{collectionId}/external-id-rows`:
 
 ```json
 {
@@ -328,12 +375,25 @@ Upsert rows by external ID with `POST /tables/{tableId}/external-id-rows`:
 }
 ```
 
+Import CSV rows with `POST /collections/{collectionId}/csv-imports`:
+
+```json
+{
+  "csv": "name,status\nFirst task,Open\n",
+  "headerRow": true,
+  "columns": ["name", "status"],
+  "validateOnly": false
+}
+```
+
+CSV imports are atomic: if any cell fails validation, no records are created. Requests accept at most 1000 data rows and raw CSV text up to 5,242,880 characters. If `columns` is omitted, `headerRow` must be true and headers are auto-mapped to fields by key or name case-insensitively. Use `null` in `columns` to skip a CSV column.
+
 ## Row Activity
 
-Read row-level activity with `GET /tables/{tableId}/rows/{rowId}/activity`. It returns paginated changes for that row.
+Read row-level activity with `GET /collections/{collectionId}/rows/{rowId}/activity`. It returns paginated changes for that row.
 
 ```bash
-python3 scripts/semifluid_api.py get /tables/{tableId}/rows/{rowId}/activity --query limit=20
+python3 scripts/semifluid_api.py get /collections/{collectionId}/rows/{rowId}/activity --query limit=20
 ```
 
 Query parameters:
@@ -348,7 +408,9 @@ Each activity item includes:
 - `actor`: `{ "type": "user" | "api_key", "name": string | null }`.
 - `changes`: field-level `fieldKey`, `before`, and `after` values.
 
-## Query Rows
+## Query Records
+
+Use `POST /collections/{collectionId}/row-queries`:
 
 ```json
 {
@@ -377,9 +439,11 @@ Filter operators: `eq`, `neq`, `is_empty`, `is_not_empty`, `gt`, `gte`, `lt`, `l
 
 Query limits: `limit` is 1-100, `search` is at most 256 characters, filters are capped at 25, sort entries are capped at 10, and explicit `fields` arrays are capped at 100 field keys.
 
-`search` performs case-insensitive broad row search over searchable text-like row values, including text, markdown, email, phone, URL, select/status labels, multi-select labels, and attachment file names.
+`search` performs case-insensitive broad record search over searchable text-like values, including text, markdown, email, phone, URL, select/status labels, multi-select labels, and attachment file names.
 
-## Aggregate Rows
+## Aggregate Records
+
+Use `POST /collections/{collectionId}/row-aggregations`:
 
 ```json
 {
@@ -419,11 +483,13 @@ Aggregate metric operations: `count`, `count_values`, `count_empty`, `count_uniq
 
 Aggregate requests default to one metric: `{ "key": "count", "operation": "count" }`. Requests accept 1 to 10 metrics. Metric keys must be 1 to 128 characters and match `^[A-Za-z0-9][A-Za-z0-9_.:-]*$`. `limit` applies to grouped aggregate results only; ungrouped aggregate queries always return one row.
 
-`countLimit` can cap count-like ungrouped metrics from 1 to 1,000,000. Responses return `countLimit + 1` when more rows or values exist.
+`countLimit` can cap count-like ungrouped metrics from 1 to 1,000,000. Responses return `countLimit + 1` when more records or values exist.
 
 Date buckets: `day`, `week`, `month`, `year`. Week buckets start on Monday and date buckets use UTC.
 
 ## Missing Values
+
+Use `POST /collections/{collectionId}/missing-row-values`:
 
 ```json
 {
@@ -436,13 +502,116 @@ Date buckets: `day`, `week`, `month`, `year`. Week buckets start on Monday and d
 
 Use `fields: "*"` to inspect all fields. Missing match modes: `any`, `all`.
 
-## Table View
+## Suggestions
 
-`PATCH /tables/{tableId}/view` updates table view preferences. `PATCH /tables/{tableId}` can also update table metadata, including `metadata.tableView`. In `PATCH /tables/{tableId}/view` and saved view updates, table-view preference properties can be set to `null` to clear them.
+Suggestions let a caller propose record creates, updates, or deletes for later review. Use `POST /collections/{collectionId}/suggestions`.
+
+Suggest a new record:
 
 ```json
 {
-  "tableView": {
+  "kind": "create",
+  "values": {
+    "name": "New task",
+    "status": "Open"
+  },
+  "note": "Suggested by import review"
+}
+```
+
+Suggest an update:
+
+```json
+{
+  "kind": "update",
+  "rowId": "00000000-0000-0000-0000-000000000000",
+  "values": {
+    "status": "Done"
+  },
+  "note": "Status should match source system"
+}
+```
+
+Suggest a delete:
+
+```json
+{
+  "kind": "delete",
+  "rowId": "00000000-0000-0000-0000-000000000000",
+  "note": "Duplicate record"
+}
+```
+
+List suggestions with `GET /collections/{collectionId}/suggestions`. Optional query parameters: `limit`, `cursor`, and `status=pending|approved|rejected`.
+
+Approve or reject a suggestion:
+
+```json
+{
+  "note": "Reviewed and accepted"
+}
+```
+
+Use `POST /collections/{collectionId}/suggestions/{suggestionId}/approvals` or `POST /collections/{collectionId}/suggestions/{suggestionId}/rejections`.
+
+## Intake Forms
+
+Manage forms with collection-authenticated endpoints:
+
+- `GET /collections/{collectionId}/intake-forms`
+- `POST /collections/{collectionId}/intake-forms`
+- `GET /collections/{collectionId}/intake-forms/{intakeFormId}`
+- `PATCH /collections/{collectionId}/intake-forms/{intakeFormId}`
+- `DELETE /collections/{collectionId}/intake-forms/{intakeFormId}`
+
+Create an intake form:
+
+```json
+{
+  "title": "Task intake",
+  "description": "Submit a task request",
+  "successMessage": "Thanks",
+  "isEnabled": true,
+  "fields": [
+    {
+      "fieldId": "00000000-0000-0000-0000-000000000000",
+      "required": true,
+      "label": "Task name",
+      "helpText": "Use a short descriptive title"
+    }
+  ]
+}
+```
+
+Create requires `title` and at least one field. Title is capped at 120 characters, description at 2000, success message at 1000, and form field lists at 50 fields. Field labels are capped at 120 characters and help text at 500.
+
+Public form endpoints use a token and do not require API key auth:
+
+```bash
+python3 scripts/semifluid_api.py get /intake-forms/{intakeFormToken} --no-auth
+python3 scripts/semifluid_api.py post /intake-forms/{intakeFormToken}/submissions --json @submission.json --no-auth
+```
+
+Submit a form:
+
+```json
+{
+  "values": {
+    "name": "New request",
+    "status": "Open"
+  }
+}
+```
+
+Submission values are keyed by public field keys. Attachment fields use attachment metadata arrays.
+
+## Collection View
+
+`PATCH /collections/{collectionId}/view` updates collection view preferences. `PATCH /collections/{collectionId}` can also update collection metadata, including `metadata.collectionView`. In `PATCH /collections/{collectionId}/view` and saved view updates, collection-view preference properties can be set to `null` to clear them.
+
+```json
+{
+  "collectionView": {
     "filters": [
       {
         "field": "status",
@@ -472,7 +641,7 @@ Use `fields: "*"` to inspect all fields. Missing match modes: `any`, `all`.
 
 Field calculations: `count_all`, `count_values`, `count_unique`, `count_empty`, `count_not_empty`, `count_true`, `count_false`, `percent_true`, `percent_false`, `count_items`, `count_unique_items`, `percent_empty`, `percent_not_empty`, `sum`, `average`, `min`, `max`, `earliest`, `latest`.
 
-Table-view filters are capped at 25, sort entries at 10, field order and hidden field IDs at 100, and field widths at 96 to 1600 pixels.
+Collection-view filters are capped at 25, sort entries at 10, field order and hidden field IDs at 100, and field widths at 96 to 1600 pixels.
 
 ## Saved Views
 
@@ -504,7 +673,7 @@ Update a saved view:
 {
   "name": "Open tasks",
   "config": {},
-  "tableView": {
+  "collectionView": {
     "filters": [
       {
         "field": "status",
@@ -525,15 +694,23 @@ Duplicate a saved view:
 }
 ```
 
-Set the default saved view with `PATCH /tables/{tableId}/views/{viewId}/default`.
+Set the default saved view with `PATCH /collections/{collectionId}/views/{viewId}/default`.
 
 ## Public Shares
 
-Public share management endpoints use table auth:
+Public share management endpoints use collection auth:
 
-- `GET /tables/{tableId}/public-share`
-- `POST /tables/{tableId}/public-share`
-- `DELETE /tables/{tableId}/public-share`
+- `GET /collections/{collectionId}/public-share`
+- `POST /collections/{collectionId}/public-share`
+- `DELETE /collections/{collectionId}/public-share`
+
+Enable or rotate a public share:
+
+```json
+{
+  "publicShareToken": "optional-custom-token-at-least-32-characters"
+}
+```
 
 Public share read endpoints use a `publicShareToken` and do not require the workspace API key when the share is enabled:
 
@@ -544,17 +721,17 @@ Public share read endpoints use a `publicShareToken` and do not require the work
 - `POST /public-shares/{publicShareToken}/row-queries`
 - `POST /public-shares/{publicShareToken}/row-aggregations`
 
-Public share row query and aggregation request bodies match the authenticated table row query and aggregation bodies.
+When using the helper for public read endpoints, pass `--no-auth` unless the user explicitly wants to send an API key. Public share record query and aggregation request bodies match the authenticated collection record query and aggregation bodies.
 
 ## Webhooks
 
 Webhook endpoints use workspace API key auth. Treat webhook secrets and delivery payloads as sensitive; do not include them in final answers, logs, or files unless the user explicitly asks and the destination is appropriate. `POST /webhooks` returns the webhook `secret` only in the create response.
 
-List all webhooks, or filter by table:
+List all webhooks, or filter by collection:
 
 ```bash
 python3 scripts/semifluid_api.py get /webhooks
-python3 scripts/semifluid_api.py get /webhooks --query tableId=00000000-0000-0000-0000-000000000000
+python3 scripts/semifluid_api.py get /webhooks --query collectionId=00000000-0000-0000-0000-000000000000
 ```
 
 Create a webhook:
@@ -563,18 +740,18 @@ Create a webhook:
 {
   "name": "Sync listener",
   "url": "https://example.com/semifluid/webhook",
-  "tableId": "00000000-0000-0000-0000-000000000000",
+  "collectionId": "00000000-0000-0000-0000-000000000000",
   "events": ["row.created", "row.updated"]
 }
 ```
 
-Create requires `name` and `url`. `name` is 1 to 64 characters, `url` is 1 to 2048 characters, `tableId` is optional, and `events` is optional but must contain 1 to 9 event types when supplied.
+Create requires `name` and `url`. `name` is 1 to 64 characters, `url` is 1 to 2048 characters, `collectionId` is optional, and `events` is optional but must contain 1 to 9 event types when supplied.
 
 Webhook event types:
 
 - `row.created`, `row.updated`, `row.deleted`
 - `field.created`, `field.updated`, `field.deleted`
-- `table.created`, `table.updated`, `table.deleted`
+- `collection.created`, `collection.updated`, `collection.deleted`
 
 Update a webhook:
 
@@ -582,13 +759,13 @@ Update a webhook:
 {
   "name": "Sync listener",
   "url": "https://example.com/semifluid/webhook",
-  "tableId": null,
+  "collectionId": null,
   "events": ["row.created"],
   "isActive": true
 }
 ```
 
-Update accepts any subset of `name`, `url`, `tableId`, `events`, and `isActive`. Set `tableId` to `null` to make the webhook workspace-wide.
+Update accepts any subset of `name`, `url`, `collectionId`, `events`, and `isActive`. Set `collectionId` to `null` to make the webhook workspace-wide.
 
 Delete a webhook with `DELETE /webhooks/{webhookId}`.
 
@@ -616,7 +793,7 @@ List workspace changes with `POST /changes/list`:
   "cursor": "next-cursor",
   "includePayload": false,
   "direction": "desc",
-  "tableId": "00000000-0000-0000-0000-000000000000",
+  "collectionId": "00000000-0000-0000-0000-000000000000",
   "operation": "rows.create",
   "entityType": "row",
   "entityId": "00000000-0000-0000-0000-000000000000"

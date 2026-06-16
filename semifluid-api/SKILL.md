@@ -1,6 +1,6 @@
 ---
 name: semifluid-api
-description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid tables, rows, fields, API keys, attachments, changes, health/version status, public shares, saved views, webhooks, row activity, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
+description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid collections, records/rows, fields, API keys, attachments, changes, health/version status, public shares, saved views, webhooks, intake forms, suggestions, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
 ---
 
 # Semifluid API
@@ -27,11 +27,12 @@ Run commands from this skill directory or pass the absolute script path:
 ```bash
 python3 scripts/semifluid_api.py health
 python3 scripts/semifluid_api.py operations
-python3 scripts/semifluid_api.py get /tables
-python3 scripts/semifluid_api.py get /tables/{tableId}/rows --query limit=10 --query fields='*'
-python3 scripts/semifluid_api.py post /tables/{tableId}/row-queries --json '{"limit":10,"search":"search text","fields":"*"}'
-python3 scripts/semifluid_api.py post /tables/{tableId}/attachments --json @attachment.json
-python3 scripts/semifluid_api.py get /tables/{tableId}/rows/{rowId}/activity --query limit=10
+python3 scripts/semifluid_api.py get /collections
+python3 scripts/semifluid_api.py get /collections/{collectionId}/rows --query limit=10 --query fields='*'
+python3 scripts/semifluid_api.py post /collections/{collectionId}/row-queries --json '{"limit":10,"search":"search text","fields":"*"}'
+python3 scripts/semifluid_api.py post /collections/{collectionId}/attachments --json @attachment.json
+python3 scripts/semifluid_api.py get /collections/{collectionId}/rows/{rowId}/activity --query limit=10
+python3 scripts/semifluid_api.py get /collections/{collectionId}/intake-forms
 python3 scripts/semifluid_api.py get /webhooks
 ```
 
@@ -44,20 +45,20 @@ For common operations shown in Quick Start or `references/api-reference.md`, cal
 Expected efficient paths:
 
 - Health check: one `health` command.
-- List tables: one `get /tables` command.
-- Show rows from a known table: one `get /tables/{tableId}/rows --query limit=N --query fields='*'` command.
-- Find a table by name, then read rows: `get /tables`, then one rows command.
-- Inspect row activity: one `get /tables/{tableId}/rows/{rowId}/activity --query limit=N` command.
-- Upload an attachment: one `post /tables/{tableId}/attachments --json @attachment.json` command after building a request body with `name`, optional `mimeType`, and `dataBase64`.
-- List webhooks: one `get /webhooks` command; add `--query tableId=...` for a table-scoped list.
-- Simple row/field/table write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
+- List collections: one `get /collections` command.
+- Show records from a known collection: one `get /collections/{collectionId}/rows --query limit=N --query fields='*'` command.
+- Find a collection by name, then read records: `get /collections`, then one rows command.
+- Inspect row activity: one `get /collections/{collectionId}/rows/{rowId}/activity --query limit=N` command.
+- Upload an attachment: one `post /collections/{collectionId}/attachments --json @attachment.json` command after building a request body with `name`, optional `mimeType`, and `dataBase64`.
+- List webhooks: one `get /webhooks` command; add `--query collectionId=...` for a collection-scoped list.
+- Simple record/field/collection write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
 
 ## Workflow
 
 1. Use the Fast Path first for common requests.
 2. For unfamiliar endpoint shape, read `references/api-reference.md`.
 3. For exact current schemas, run `python3 scripts/semifluid_api.py spec` or inspect the live spec URL only when the local reference is insufficient.
-4. Prefer targeted read-only requests (`GET /tables`, `GET /tables/{tableId}`, `GET /tables/{tableId}/rows`) before mutating data.
+4. Prefer targeted read-only requests (`GET /collections`, `GET /collections/{collectionId}`, `GET /collections/{collectionId}/rows`) before mutating data.
 5. For write operations, build a small JSON file and call with `--json @file.json`.
 6. Report status codes and concise results. Do not include secrets in outputs.
 
@@ -66,7 +67,7 @@ Expected efficient paths:
 Use trace logging when measuring the skill:
 
 ```bash
-SEMIFLUID_API_TRACE=/tmp/semifluid-api-trace.jsonl python3 scripts/semifluid_api.py get /tables
+SEMIFLUID_API_TRACE=/tmp/semifluid-api-trace.jsonl python3 scripts/semifluid_api.py get /collections
 python3 scripts/evaluate_skill_run.py --task list_tables --trace /tmp/semifluid-api-trace.jsonl --success yes --elapsed-seconds 12 --commands 1
 ```
 
