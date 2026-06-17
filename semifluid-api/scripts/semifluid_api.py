@@ -330,7 +330,7 @@ def build_parser() -> argparse.ArgumentParser:
     add_request_options(request_parser)
     request_parser.set_defaults(func=run_request)
 
-    for method in ("get", "post", "patch", "delete"):
+    for method in ("get", "post", "put", "patch", "delete"):
         method_parser = subparsers.add_parser(method, help=f"Shortcut for {method.upper()} requests")
         method_parser.add_argument("path")
         add_request_options(method_parser)

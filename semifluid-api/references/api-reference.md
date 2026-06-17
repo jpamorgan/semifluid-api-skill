@@ -2,11 +2,11 @@
 
 Source: `https://api.semifluid.ai/api-reference/spec.json`
 
-Last refreshed from source: `2026-06-15`
+Last refreshed from source: `2026-06-17`
 
 OpenAPI: `3.1.1`
 
-API version: `0.1.102`
+API version: `0.1.114`
 
 Base URL: `https://api.semifluid.ai`
 
@@ -37,6 +37,8 @@ python3 scripts/semifluid_api.py post /collections/{collectionId}/row-aggregatio
 python3 scripts/semifluid_api.py patch /collections/{collectionId}/rows --json @rows-update.json
 python3 scripts/semifluid_api.py get /collections/{collectionId}/rows/{rowId}/activity --query limit=20
 python3 scripts/semifluid_api.py post /collections/{collectionId}/attachments --json @attachment.json
+python3 scripts/semifluid_api.py put /collections/{collectionId}/file --json @file.json
+python3 scripts/semifluid_api.py get /collections/{collectionId}/files --query limit=50
 python3 scripts/semifluid_api.py get /collections/{collectionId}/intake-forms
 python3 scripts/semifluid_api.py post /collections/{collectionId}/csv-imports --json @csv-import.json
 python3 scripts/semifluid_api.py post /changes/list --json '{"limit":10,"direction":"desc"}'
@@ -53,9 +55,18 @@ python3 scripts/semifluid_api.py post /webhooks --json @webhook.json
 | POST | `/api-keys` | `CreateApiKey` | Create workspace API key |
 | DELETE | `/api-keys/{apiKeyId}` | `DeleteApiKey` | Delete workspace API key |
 | PATCH | `/api-keys/{apiKeyId}` | `RenameApiKey` | Rename workspace API key |
+| PATCH | `/api-keys/{apiKeyId}/access` | `UpdateApiKeyAccess` | Update workspace API key access |
 | POST | `/api-keys/{apiKeyId}/rotations` | `RollApiKey` | Roll workspace API key |
+| GET | `/agent-workspaces/{agentWorkspaceId}/files` | `ListLegacyAgentWorkspaceFiles` | List agent workspace files |
+| GET | `/agent-workspaces/{agentWorkspaceId}/files/{fileId}` | `GetLegacyAgentWorkspaceFile` | Get agent workspace file |
+| DELETE | `/agent-workspaces/{agentWorkspaceId}/files/{fileId}` | `DeleteLegacyAgentWorkspaceFile` | Delete agent workspace file |
+| PUT | `/agent-workspaces/{agentWorkspaceId}/file` | `PutLegacyAgentWorkspaceFile` | Create or replace agent workspace file |
 | POST | `/collections/{collectionId}/attachments` | `UploadAttachment` | Upload attachment |
 | POST | `/changes/list` | `changes.list` | List changes |
+| GET | `/collections/{collectionId}/files` | `ListAgentWorkspaceFiles` | List collection files |
+| GET | `/collections/{collectionId}/files/{fileId}` | `GetAgentWorkspaceFile` | Get collection file |
+| DELETE | `/collections/{collectionId}/files/{fileId}` | `DeleteAgentWorkspaceFile` | Delete collection file |
+| PUT | `/collections/{collectionId}/file` | `PutAgentWorkspaceFile` | Create or replace collection file |
 | POST | `/collections/{collectionId}/fields` | `CreateCollectionField` | Create field |
 | PATCH | `/collections/{collectionId}/fields/{fieldId}` | `UpdateCollectionField` | Update field |
 | DELETE | `/collections/{collectionId}/fields/{fieldId}` | `DeleteCollectionField` | Soft-delete field |
@@ -67,12 +78,12 @@ python3 scripts/semifluid_api.py post /webhooks --json @webhook.json
 | DELETE | `/collections/{collectionId}/intake-forms/{intakeFormId}` | `DeleteIntakeForm` | Delete intake form |
 | GET | `/intake-forms/{intakeFormToken}` | `GetPublicIntakeForm` | Get public intake form |
 | POST | `/intake-forms/{intakeFormToken}/submissions` | `SubmitIntakeForm` | Submit intake form response |
-| GET | `/public-shares/{publicShareToken}/resolve` | `ResolvePublicShare` | Resolve public share |
-| GET | `/public-shares/{publicShareToken}` | `GetPublicShareCollection` | Get public share collection |
-| GET | `/public-shares/{publicShareToken}/rows` | `ListPublicShareRecords` | List public share records |
-| POST | `/public-shares/{publicShareToken}/row-queries` | `QueryPublicShareRecords` | Query public share records |
-| POST | `/public-shares/{publicShareToken}/row-aggregations` | `AggregatePublicShareRecords` | Aggregate public share records |
-| GET | `/public-shares/{publicShareToken}/rows/{rowId}` | `GetPublicShareRecord` | Get public share record |
+| GET | `/share/{publicShareToken}/resolve` | `ResolvePublicShare` | Resolve public share |
+| GET | `/share/{publicShareToken}` | `GetPublicShareCollection` | Get public share collection |
+| GET | `/share/{publicShareToken}/rows` | `ListPublicShareRecords` | List public share records |
+| POST | `/share/{publicShareToken}/row-queries` | `QueryPublicShareRecords` | Query public share records |
+| POST | `/share/{publicShareToken}/row-aggregations` | `AggregatePublicShareRecords` | Aggregate public share records |
+| GET | `/share/{publicShareToken}/rows/{rowId}` | `GetPublicShareRecord` | Get public share record |
 | POST | `/collections/{collectionId}/rows` | `CreateCollectionRecords` | Create records |
 | GET | `/collections/{collectionId}/rows` | `ListCollectionRecords` | List records |
 | PATCH | `/collections/{collectionId}/rows` | `UpdateCollectionRecords` | Update record values |
@@ -117,13 +128,14 @@ python3 scripts/semifluid_api.py post /webhooks --json @webhook.json
 
 ## Parameters
 
-- `collectionId`, `rowId`, `fieldId`, `viewId`, `intakeFormId`, `suggestionId`, and `webhookId` path parameters are UUID strings.
+- `collectionId`, `rowId`, `fieldId`, `fileId`, `viewId`, `intakeFormId`, `suggestionId`, `webhookId`, and `agentWorkspaceId` path parameters are UUID strings.
 - `apiKeyId` is a non-empty string.
-- `publicShareToken` and `intakeFormToken` are public token strings from 32 to 256 characters.
+- `publicShareToken` is a 43-character URL-safe token matching `^[A-Za-z0-9_-]{43}$`; `intakeFormToken` is a public token string from 32 to 256 characters.
 - List endpoints generally default `limit` to `50` and cap `limit` at `100`; webhook deliveries default to `20` and cap at `50`.
 - Record read and write endpoints support `fields: "*"` or an array of up to 100 field keys. For GET query strings, pass `--query fields='*'`; for POST/PATCH requests, include `fields` in the JSON body.
 - Field keys in record values must match `^[A-Za-z_][A-Za-z0-9_]*$`.
 - `POST /collections/{collectionId}/attachments` accepts `name`, optional `mimeType`, and `dataBase64` up to 34,952,536 characters.
+- File list endpoints accept `limit`, `cursor`, `prefix`, and `q`. File upsert endpoints accept `path` and optional `content` up to 10,000 characters.
 - `POST /changes/list` supports `limit`, `cursor`, `includePayload`, `direction=asc|desc`, `collectionId`, `operation`, `entityType`, and `entityId`; `direction` defaults to `asc`.
 - `GET /webhooks` accepts optional `collectionId`; `GET /webhooks/{webhookId}/deliveries` accepts optional `limit`.
 
@@ -160,6 +172,29 @@ Create a collection-scoped key:
 ```
 
 Collection-scoped grant scopes: `read_only`, `row_suggester`, `suggestion_reviewer`, `row_editor`, `locked_row_editor`, `collection_admin`.
+
+Collection-scoped grants may include `capabilities`, currently `public_share_manage` and `intake_form_manage`.
+
+Update API key access with `PATCH /api-keys/{apiKeyId}/access`:
+
+```json
+{
+  "access": {
+    "kind": "collection_scoped",
+    "grants": [
+      {
+        "collectionId": "00000000-0000-0000-0000-000000000000",
+        "scope": "collection_admin",
+        "capabilities": ["public_share_manage", "intake_form_manage"]
+      }
+    ]
+  },
+  "preset": "collection-admin",
+  "reason": "Grant admin access for automation"
+}
+```
+
+The `access` property is required. `preset` is optional and must be 1 to 64 characters. `reason` is optional and must be 1 to 500 characters.
 
 Roll an API key with `POST /api-keys/{apiKeyId}/rotations`.
 
@@ -344,11 +379,38 @@ Attachment field values use arrays of attachment metadata returned by `POST /col
       "mimeType": "application/pdf",
       "size": 12345,
       "url": "https://api.semifluid.ai/...",
-      "createdAt": "2026-06-15T00:00:00.000Z"
+      "createdAt": "2026-06-17T00:00:00.000Z"
     }
   ]
 }
 ```
+
+## Collection Files
+
+Collection files are text files associated with a collection. They are separate from attachment uploads used in attachment field values.
+
+List collection files:
+
+```bash
+python3 scripts/semifluid_api.py get /collections/{collectionId}/files --query limit=50 --query prefix=/
+```
+
+List endpoints accept `limit` from 1 to 100, optional `cursor`, optional `prefix` defaulting to `/`, and optional `q` search text up to 256 characters.
+
+Create or replace a collection file:
+
+```json
+{
+  "path": "/notes/summary.md",
+  "content": "# Summary\n"
+}
+```
+
+Use `PUT /collections/{collectionId}/file`. `path` is required, must be 1 to 191 characters, and `content` is optional with a 10,000 character limit. The response is either `{ "mode": "applied", "file": ... }` or `{ "mode": "suggested", "suggestion": ... }` depending on the caller's permissions.
+
+Get or delete a file by ID with `GET /collections/{collectionId}/files/{fileId}` and `DELETE /collections/{collectionId}/files/{fileId}`.
+
+Legacy agent-workspace file endpoints have the same request and response shapes under `/agent-workspaces/{agentWorkspaceId}/files`, `/agent-workspaces/{agentWorkspaceId}/files/{fileId}`, and `/agent-workspaces/{agentWorkspaceId}/file`.
 
 Look up records by ID:
 
@@ -708,18 +770,18 @@ Enable or rotate a public share:
 
 ```json
 {
-  "publicShareToken": "optional-custom-token-at-least-32-characters"
+  "publicShareToken": "optional-43-character-url-safe-token"
 }
 ```
 
 Public share read endpoints use a `publicShareToken` and do not require the workspace API key when the share is enabled:
 
-- `GET /public-shares/{publicShareToken}/resolve`
-- `GET /public-shares/{publicShareToken}`
-- `GET /public-shares/{publicShareToken}/rows`
-- `GET /public-shares/{publicShareToken}/rows/{rowId}`
-- `POST /public-shares/{publicShareToken}/row-queries`
-- `POST /public-shares/{publicShareToken}/row-aggregations`
+- `GET /share/{publicShareToken}/resolve`
+- `GET /share/{publicShareToken}`
+- `GET /share/{publicShareToken}/rows`
+- `GET /share/{publicShareToken}/rows/{rowId}`
+- `POST /share/{publicShareToken}/row-queries`
+- `POST /share/{publicShareToken}/row-aggregations`
 
 When using the helper for public read endpoints, pass `--no-auth` unless the user explicitly wants to send an API key. Public share record query and aggregation request bodies match the authenticated collection record query and aggregation bodies.
 

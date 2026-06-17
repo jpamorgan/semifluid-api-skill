@@ -31,6 +31,7 @@ python3 scripts/semifluid_api.py get /collections
 python3 scripts/semifluid_api.py get /collections/{collectionId}/rows --query limit=10 --query fields='*'
 python3 scripts/semifluid_api.py post /collections/{collectionId}/row-queries --json '{"limit":10,"search":"search text","fields":"*"}'
 python3 scripts/semifluid_api.py post /collections/{collectionId}/attachments --json @attachment.json
+python3 scripts/semifluid_api.py put /collections/{collectionId}/file --json @file.json
 python3 scripts/semifluid_api.py get /collections/{collectionId}/rows/{rowId}/activity --query limit=10
 python3 scripts/semifluid_api.py get /collections/{collectionId}/intake-forms
 python3 scripts/semifluid_api.py get /webhooks
@@ -50,6 +51,7 @@ Expected efficient paths:
 - Find a collection by name, then read records: `get /collections`, then one rows command.
 - Inspect row activity: one `get /collections/{collectionId}/rows/{rowId}/activity --query limit=N` command.
 - Upload an attachment: one `post /collections/{collectionId}/attachments --json @attachment.json` command after building a request body with `name`, optional `mimeType`, and `dataBase64`.
+- Create or replace a collection file: one `put /collections/{collectionId}/file --json @file.json` command after building a request body with `path` and optional `content`.
 - List webhooks: one `get /webhooks` command; add `--query collectionId=...` for a collection-scoped list.
 - Simple record/field/collection write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
 
