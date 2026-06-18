@@ -1,6 +1,6 @@
 ---
 name: semifluid-api
-description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid collections, records, fields, API keys, attachments, events, health/version status, public shares, saved views, webhooks, forms, suggestions, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
+description: Interact with the Semifluid HTTP API directly, without MCP, using a local helper script and OpenAPI-derived endpoint notes. Use when Codex needs to inspect or change Semifluid collections, records, fields, API keys, attachments, events, health/version status, public shares, saved views, webhooks, intake forms, suggestions, or any endpoint from https://api.semifluid.ai/api-reference/spec.json.
 ---
 
 # Semifluid API
@@ -29,10 +29,11 @@ python3 scripts/semifluid_api.py health
 python3 scripts/semifluid_api.py operations
 python3 scripts/semifluid_api.py get /v1/collections
 python3 scripts/semifluid_api.py get /v1/collections/{collectionId}/records --query limit=10 --query fields='*'
-python3 scripts/semifluid_api.py post /v1/collections/{collectionId}/record-queries --json '{"limit":10,"search":"search text","fields":"*"}'
-python3 scripts/semifluid_api.py post /v1/collections/{collectionId}/attachments --json @attachment.json
-python3 scripts/semifluid_api.py get /v1/collections/{collectionId}/records/{recordId}/events --query limit=10
-python3 scripts/semifluid_api.py get /v1/collections/{collectionId}/forms
+python3 scripts/semifluid_api.py post /v1/collections/{collectionId}/records/query --json '{"limit":10,"search":"search text","fields":"*"}'
+python3 scripts/semifluid_api.py post /v1/attachments --json @attachment.json
+python3 scripts/semifluid_api.py post /v1/collections/{collectionId}/record-imports --json @csv-import.json
+python3 scripts/semifluid_api.py get /v1/events --query limit=10 --query direction=desc
+python3 scripts/semifluid_api.py get /v1/intake-forms --query collectionId={collectionId}
 python3 scripts/semifluid_api.py get /v1/webhooks
 ```
 
@@ -48,8 +49,10 @@ Expected efficient paths:
 - List collections: one `get /v1/collections` command.
 - Show records from a known collection: one `get /v1/collections/{collectionId}/records --query limit=N --query fields='*'` command.
 - Find a collection by name, then read records: `get /v1/collections`, then one records command.
-- Inspect record events: one `get /v1/collections/{collectionId}/records/{recordId}/events --query limit=N` command.
-- Upload an attachment: one `post /v1/collections/{collectionId}/attachments --json @attachment.json` command after building a request body with `name`, optional `mimeType`, and `dataBase64`.
+- Query records: one `post /v1/collections/{collectionId}/records/query --json @query.json` command.
+- Upload an attachment: one `post /v1/attachments --json @attachment.json` command after building a request body with `collectionId`, `name`, optional `mimeType`, and `dataBase64`.
+- Import CSV records: one `post /v1/collections/{collectionId}/record-imports --json @csv-import.json` command after building a request body with `csv`, optional `headerRow`, optional `columns`, and optional `validateOnly`.
+- List events: one `get /v1/events --query limit=N --query direction=desc` command; add `--query collectionId=...` for a collection-scoped list.
 - List webhooks: one `get /v1/webhooks` command; add `--query collectionId=...` for a collection-scoped list.
 - Simple record/field/collection write: make the smallest read-only request needed to identify the target, write with `--json @file.json`, then report the result.
 
@@ -68,7 +71,7 @@ Use trace logging when measuring the skill:
 
 ```bash
 SEMIFLUID_API_TRACE=/tmp/semifluid-api-trace.jsonl python3 scripts/semifluid_api.py get /v1/collections
-python3 scripts/evaluate_skill_run.py --task list_collections --trace /tmp/semifluid-api-trace.jsonl --success yes --elapsed-seconds 12 --commands 1
+python3 scripts/evaluate_skill_run.py --task list_tables --trace /tmp/semifluid-api-trace.jsonl --success yes --elapsed-seconds 12 --commands 1
 ```
 
 Score agent runs on correctness first, then efficiency:
@@ -91,7 +94,3 @@ Score agent runs on correctness first, then efficiency:
 - Use `--no-auth` only for public endpoints such as `/v1/health`.
 - Use `--base-url` if targeting a non-production Semifluid API.
 - Use `--output path` for large responses or files.
-
-## Maintenance
-
-When changing this skill, push the source changes to `https://github.com/jpamorgan/semifluid-api-skill`.

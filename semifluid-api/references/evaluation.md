@@ -14,7 +14,7 @@ After the run, score it:
 
 ```bash
 python3 scripts/evaluate_skill_run.py \
-  --task list_collections \
+  --task list_tables \
   --trace /tmp/semifluid-api-evals/run-001.jsonl \
   --success yes \
   --elapsed-seconds 12 \
@@ -35,7 +35,6 @@ Run each prompt 3-5 times against the current skill, then again after instructio
 | `read_known_records` | Use `$semifluid-api` to show 10 records from collection `<collectionId>`. | 1 API call, no docs/spec. |
 | `find_collection_then_records` | Use `$semifluid-api` to find the collection named `<name>` and show 10 records. | `GET /v1/collections`, then records call. |
 | `query_records` | Use `$semifluid-api` to search collection `<name or id>` for `<query>`. | Usually collection lookup plus query call. |
-| `record_events` | Use `$semifluid-api` to show recent events for record `<recordId>` in collection `<collectionId>`. | 1 API call, no docs/spec. |
 | `list_webhooks` | Use `$semifluid-api` to list my Semifluid webhooks. | 1 command, 1 API call, no docs/spec. |
 | `simple_write` | Use `$semifluid-api` to add one record to collection `<name or id>` with these values: `<values>`. | Small context read, one write, concise result. |
 | `simple_write` | Use `$semifluid-api` to update record `<recordId>` in collection `<collectionId>`: `<field>=<value>`. | Optional record/collection read, one patch, concise result. |
