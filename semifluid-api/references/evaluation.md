@@ -14,7 +14,7 @@ After the run, score it:
 
 ```bash
 python3 scripts/evaluate_skill_run.py \
-  --task list_tables \
+  --task list_collections \
   --trace /tmp/semifluid-api-evals/run-001.jsonl \
   --success yes \
   --elapsed-seconds 12 \
@@ -31,15 +31,15 @@ Run each prompt 3-5 times against the current skill, then again after instructio
 | Task | Prompt | Target Trace |
 | --- | --- | --- |
 | `health` | Use `$semifluid-api` to check Semifluid health. | 1 command, 1 API call, no docs/spec. |
-| `list_tables` | Use `$semifluid-api` to list my Semifluid tables. | 1 command, 1 API call, no docs/spec. |
-| `read_known_rows` | Use `$semifluid-api` to show 10 rows from table `<tableId>`. | 1 API call, no docs/spec. |
-| `find_table_then_rows` | Use `$semifluid-api` to find the table named `<name>` and show 10 rows. | `GET /tables`, then rows call. |
-| `query_rows` | Use `$semifluid-api` to search table `<name or id>` for `<query>`. | Usually table lookup plus query call. |
-| `row_activity` | Use `$semifluid-api` to show recent activity for row `<rowId>` in table `<tableId>`. | 1 API call, no docs/spec. |
+| `list_collections` | Use `$semifluid-api` to list my Semifluid collections. | 1 command, 1 API call, no docs/spec. |
+| `read_known_records` | Use `$semifluid-api` to show 10 records from collection `<collectionId>`. | 1 API call, no docs/spec. |
+| `find_collection_then_records` | Use `$semifluid-api` to find the collection named `<name>` and show 10 records. | `GET /v1/collections`, then records call. |
+| `query_records` | Use `$semifluid-api` to search collection `<name or id>` for `<query>`. | Usually collection lookup plus query call. |
+| `record_events` | Use `$semifluid-api` to show recent events for record `<recordId>` in collection `<collectionId>`. | 1 API call, no docs/spec. |
 | `list_webhooks` | Use `$semifluid-api` to list my Semifluid webhooks. | 1 command, 1 API call, no docs/spec. |
-| `simple_write` | Use `$semifluid-api` to add one row to table `<name or id>` with these values: `<values>`. | Small context read, one write, concise result. |
-| `simple_write` | Use `$semifluid-api` to update row `<rowId>` in table `<tableId>`: `<field>=<value>`. | Optional row/table read, one patch, concise result. |
-| `uncommon_endpoint` | Use `$semifluid-api` to inspect recent workspace changes. | Docs/spec allowed only if shape is unclear. |
+| `simple_write` | Use `$semifluid-api` to add one record to collection `<name or id>` with these values: `<values>`. | Small context read, one write, concise result. |
+| `simple_write` | Use `$semifluid-api` to update record `<recordId>` in collection `<collectionId>`: `<field>=<value>`. | Optional record/collection read, one patch, concise result. |
+| `uncommon_endpoint` | Use `$semifluid-api` to inspect recent workspace events. | Docs/spec allowed only if shape is unclear. |
 
 ## Metrics
 
@@ -62,4 +62,4 @@ Run each prompt 3-5 times against the current skill, then again after instructio
 
 ## What Good Looks Like
 
-Good agents call the helper first for common tasks, avoid reference/spec reads unless needed, and keep final answers short. Writes should use the smallest read-only context needed to avoid changing the wrong table, row, or field.
+Good agents call the helper first for common tasks, avoid reference/spec reads unless needed, and keep final answers short. Writes should use the smallest read-only context needed to avoid changing the wrong collection, record, or field.

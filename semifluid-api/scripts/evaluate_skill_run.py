@@ -12,10 +12,12 @@ from typing import Any
 
 TASK_TARGETS = {
     "health": {"max_api_calls": 1, "max_commands": 1, "max_spec_fetches": 0, "max_doc_reads": 0},
-    "list_tables": {"max_api_calls": 1, "max_commands": 1, "max_spec_fetches": 0, "max_doc_reads": 0},
-    "read_known_rows": {"max_api_calls": 1, "max_commands": 1, "max_spec_fetches": 0, "max_doc_reads": 0},
-    "find_table_then_rows": {"max_api_calls": 2, "max_commands": 2, "max_spec_fetches": 0, "max_doc_reads": 0},
-    "query_rows": {"max_api_calls": 2, "max_commands": 3, "max_spec_fetches": 0, "max_doc_reads": 0},
+    "list_collections": {"max_api_calls": 1, "max_commands": 1, "max_spec_fetches": 0, "max_doc_reads": 0},
+    "read_known_records": {"max_api_calls": 1, "max_commands": 1, "max_spec_fetches": 0, "max_doc_reads": 0},
+    "find_collection_then_records": {"max_api_calls": 2, "max_commands": 2, "max_spec_fetches": 0, "max_doc_reads": 0},
+    "query_records": {"max_api_calls": 2, "max_commands": 3, "max_spec_fetches": 0, "max_doc_reads": 0},
+    "record_events": {"max_api_calls": 1, "max_commands": 1, "max_spec_fetches": 0, "max_doc_reads": 0},
+    "list_webhooks": {"max_api_calls": 1, "max_commands": 1, "max_spec_fetches": 0, "max_doc_reads": 0},
     "simple_write": {"max_api_calls": 3, "max_commands": 4, "max_spec_fetches": 0, "max_doc_reads": 0},
     "uncommon_endpoint": {"max_api_calls": 4, "max_commands": 5, "max_spec_fetches": 1, "max_doc_reads": 1},
     "custom": {"max_api_calls": 999, "max_commands": 999, "max_spec_fetches": 999, "max_doc_reads": 999},

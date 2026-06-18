@@ -248,7 +248,7 @@ def run_request(args: argparse.Namespace) -> int:
 
 def run_health(args: argparse.Namespace) -> int:
     args.method = "GET"
-    args.path = "/health"
+    args.path = "/v1/health"
     args.query = []
     args.json = None
     args.no_auth = True
@@ -310,7 +310,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Call the Semifluid API.")
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    health = subparsers.add_parser("health", help="Call GET /health")
+    health = subparsers.add_parser("health", help="Call GET /v1/health")
     add_request_options(health)
     health.set_defaults(func=run_health)
 
