@@ -71,7 +71,7 @@ Use trace logging when measuring the skill:
 
 ```bash
 SEMIFLUID_API_TRACE=/tmp/semifluid-api-trace.jsonl python3 scripts/semifluid_api.py get /v1/collections
-python3 scripts/evaluate_skill_run.py --task list_tables --trace /tmp/semifluid-api-trace.jsonl --success yes --elapsed-seconds 12 --commands 1
+python3 scripts/evaluate_skill_run.py --task list_collections --trace /tmp/semifluid-api-trace.jsonl --success yes --elapsed-seconds 12 --commands 1
 ```
 
 Score agent runs on correctness first, then efficiency:

@@ -14,7 +14,7 @@ After the run, score it:
 
 ```bash
 python3 scripts/evaluate_skill_run.py \
-  --task list_tables \
+  --task list_collections \
   --trace /tmp/semifluid-api-evals/run-001.jsonl \
   --success yes \
   --elapsed-seconds 12 \
